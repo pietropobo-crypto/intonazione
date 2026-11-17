@@ -8,7 +8,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Intonazione">
-<meta name="description" content="Controlla l'intonazione al violino: nota, scarto in cent e di quanto spostare il dito.">
+<meta name="description" content="Controlla l'intonazione al violino: nota, scarto in cent, di quanto spostare il dito e lo storico delle sessioni.">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -32,6 +32,7 @@ body{margin:0;min-height:100%;background:var(--vernice) radial-gradient(130% 55%
 button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
 :focus-visible{outline:2px solid var(--avorio);outline-offset:3px}
 p,h1,h2{margin:0}
+[hidden]{display:none!important}
 
 .app{min-height:100dvh;display:flex;flex-direction:column;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
 .bar{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:14px 20px 0}
@@ -62,11 +63,12 @@ body[data-state=fuori]{--stato:var(--fuori)}
 #lens{display:block;width:100%;height:0;flex:1 1 0;min-height:96px;border-top:1px solid #241a16}
 
 /* azioni */
-.actions{padding:14px 20px 18px;display:flex;flex-direction:column;gap:10px}
+.actions{padding:14px 20px 16px;display:flex;flex-direction:column;gap:10px}
 #err{display:none;font-size:15px;line-height:1.4;color:var(--avorio);border-left:3px solid var(--fuori);padding:2px 0 2px 12px}
 #err.show{display:block}
 .primary{width:100%;padding:17px 16px;border-radius:999px;background:var(--avorio);color:#1d0f0b;font:700 17px/1 var(--sans)}
 .primary.on{background:transparent;color:var(--avorio);box-shadow:inset 0 0 0 1.5px var(--tenue)}
+#today{min-height:20px;font-size:14px;line-height:1.4;color:var(--tenue);text-align:center}
 
 /* fogli */
 dialog{margin:auto 0 0;width:100%;max-width:560px;max-height:90dvh;border:0;padding:0;background:#341c15;color:var(--avorio);border-radius:20px 20px 0 0;overflow:auto}
@@ -75,9 +77,12 @@ dialog::backdrop{background:rgba(8,4,3,.62)}
 .sheet{padding:20px 20px calc(22px + env(safe-area-inset-bottom))}
 .sheet-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:6px}
 .sheet h2{font:700 30px/1.1 var(--serif);letter-spacing:-.01em}
-.lead{color:var(--tenue);font-size:15px;margin-bottom:8px;max-width:44ch}
+.seg.views{display:inline-flex;margin:8px 0 20px}
+.headline{font:700 22px/1.25 var(--sans);max-width:30ch}
+.detail{font-size:15px;line-height:1.45;margin-top:8px;max-width:46ch}
+.detail b,.readout b{font-weight:700}
 
-.rows{list-style:none;margin:8px 0 0;padding:0}
+.rows{list-style:none;margin:18px 0 0;padding:0}
 .rows li{display:grid;grid-template-columns:74px 1fr auto;gap:4px 12px;align-items:start;padding:14px 0;border-top:1px solid var(--riga)}
 .s-note{font:700 34px/1 var(--serif);white-space:nowrap}
 .s-note .acc{font:500 .5em/1 "Noto Sans Symbols 2","Noto Sans Symbols","Segoe UI Symbol","Apple Symbols","DejaVu Sans",sans-serif;vertical-align:.7em}
@@ -93,20 +98,43 @@ dialog::backdrop{background:rgba(8,4,3,.62)}
 .s-bar .mark{width:10px;height:10px;top:2px;border-radius:50%;background:currentColor;transform:translateX(-5px)}
 .c-ok{color:var(--ok)}.c-quasi{color:var(--quasi)}.c-fuori{color:var(--fuori)}
 
-.sheet-actions{display:flex;flex-wrap:wrap;gap:10px 20px;align-items:center;margin-top:18px;padding-top:16px;border-top:1px solid var(--riga)}
+.sheet-actions{display:flex;flex-wrap:wrap;gap:10px 22px;align-items:center;margin-top:20px;padding-top:16px;border-top:1px solid var(--riga)}
 .file{position:relative;overflow:hidden;display:inline-block}
 .file input{position:absolute;inset:0;opacity:0;font-size:100px;cursor:pointer}
 .fine{font-size:13px;line-height:1.45;color:var(--tenue);margin-top:14px;max-width:52ch}
+.fine:empty{display:none}
+.copybox{display:block;width:100%;margin-top:8px;background:var(--vernice);color:var(--avorio);border:1px solid var(--riga);border-radius:8px;padding:10px;font:500 13px/1.45 var(--sans)}
+
+/* storico */
+.readout{font-size:15px;line-height:1.4;margin:24px 0 2px;min-height:21px}
+.charts{border-radius:6px;touch-action:pan-y;cursor:pointer;-webkit-user-select:none;user-select:none}
+.chart-t{font-size:13px;color:var(--tenue);margin:12px 0 2px}
+.charts svg{display:block;overflow:visible}
+.charts .ax{font:500 11px var(--sans);fill:var(--tenue)}
+.charts .axs{font:700 11px var(--sans);fill:var(--avorio)}
+.dayhead,.day summary{display:grid;grid-template-columns:1fr 40px 56px 70px 18px;gap:6px;align-items:baseline}
+.dayhead{font-size:13px;color:var(--tenue);margin-top:28px;padding-bottom:6px}
+.dayhead span:not(:first-child),.day summary span:not(:first-child){text-align:right}
+.day{border-top:1px solid var(--riga)}
+.day summary{list-style:none;cursor:pointer;padding:12px 0;font-variant-numeric:tabular-nums}
+.day summary::-webkit-details-marker{display:none}
+.d-date{font-weight:700}
+.chev{justify-self:end;width:8px;height:8px;border-right:1.5px solid var(--tenue);border-bottom:1.5px solid var(--tenue);transform:translateY(-3px) rotate(45deg)}
+.day[open] .chev{transform:translateY(1px) rotate(-135deg)}
+.d-body{padding:0 0 16px}
+.d-body .detail:first-child{margin-top:0}
 
 .opt{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:13px 0;border-top:1px solid var(--riga)}
 .opt>span:first-child{flex:1}
 .opt output{min-width:64px;text-align:right;color:var(--tenue);font-variant-numeric:tabular-nums}
+.opt small{font-size:13px;color:var(--tenue);margin-left:6px}
 .step{display:flex;align-items:center;gap:4px}
 .step button{width:40px;height:40px;border-radius:50%;box-shadow:inset 0 0 0 1.5px var(--riga);font-size:20px;line-height:1}
 .step b{min-width:76px;text-align:center;font-variant-numeric:tabular-nums}
 .seg{display:flex;border-radius:999px;box-shadow:inset 0 0 0 1.5px var(--riga);padding:3px}
 .seg button{padding:8px 14px;border-radius:999px;color:var(--tenue);font-size:15px}
 .seg button[aria-pressed=true]{background:var(--avorio);color:#1d0f0b;font-weight:700}
+.danger{color:var(--fuori);text-decoration-color:var(--fuori)}
 input[type=range]{width:136px;accent-color:var(--avorio)}
 @media(prefers-reduced-motion:reduce){.now{transition:none}}
 </style>
@@ -138,19 +166,47 @@ input[type=range]{width:136px;accent-color:var(--avorio)}
   <footer class="actions">
     <div id="err" role="alert"></div>
     <button class="primary" id="go">Avvia microfono</button>
+    <p id="today" aria-live="polite"></p>
   </footer>
 </div>
 
 <dialog id="sum" aria-labelledby="sumTitle">
   <div class="sheet">
     <div class="sheet-head"><h2 id="sumTitle">Riepilogo</h2><button class="link" data-close>Chiudi</button></div>
-    <p class="lead" id="sumLead"></p>
-    <ul class="rows" id="sumRows"></ul>
-    <div class="sheet-actions">
-      <label class="link file">Analizza una registrazione<input type="file" id="file" accept="audio/*,video/*"></label>
-      <button class="link" id="reset">Azzera</button>
+    <div class="seg views" id="views">
+      <button data-view="today">Oggi</button>
+      <button data-view="days">Storico</button>
+      <button data-view="file" hidden>Registrazione</button>
     </div>
-    <p class="fine" id="fileMsg">Puoi anche registrare un passaggio con il telefono e caricarlo qui: il riepilogo viene ricalcolato sulla registrazione.</p>
+
+    <section id="vToday">
+      <div id="todayBody"></div>
+      <div class="sheet-actions">
+        <label class="link file">Analizza una registrazione<input type="file" class="audioFile" accept="audio/*,video/*"></label>
+      </div>
+      <p class="fine msg">Puoi registrare un passaggio con il telefono e analizzarlo qui. Le registrazioni non entrano nello storico.</p>
+      <p class="fine">Contano le note tenute almeno un quarto di secondo. Nella barra di ogni nota il pallino è lo scarto medio, la linea quanto cambia da una volta all’altra, la fascia verde la tolleranza.</p>
+    </section>
+
+    <section id="vDays" hidden>
+      <div id="daysBody"></div>
+      <div class="sheet-actions">
+        <button class="link" id="copyText">Copia il riepilogo</button>
+        <button class="link" id="backup">Salva un backup</button>
+        <label class="link file">Ripristina un backup<input type="file" id="restore" accept="application/json,.json"></label>
+      </div>
+      <div class="fine msg" id="daysMsg"></div>
+      <p class="fine" id="daysFine"></p>
+    </section>
+
+    <section id="vFile" hidden>
+      <div id="fileBody"></div>
+      <div class="sheet-actions">
+        <label class="link file">Analizza un’altra registrazione<input type="file" class="audioFile" accept="audio/*,video/*"></label>
+      </div>
+      <p class="fine msg"></p>
+      <p class="fine">Le registrazioni analizzate non entrano nello storico.</p>
+    </section>
   </div>
 </dialog>
 
@@ -165,6 +221,8 @@ input[type=range]{width:136px;accent-color:var(--avorio)}
       <div class="seg" data-key="acc"><button data-v="sharp">diesis</button><button data-v="flat">bemolle</button></div></div>
     <div class="opt"><span>Tolleranza</span><input type="range" id="tol" min="3" max="25" step="1" aria-label="Tolleranza in cent"><output id="tolVal"></output></div>
     <div class="opt"><span>Sensibilità del microfono</span><input type="range" id="gate" min="0" max="100" step="1" aria-label="Sensibilità del microfono"><output id="gateVal"></output></div>
+    <div class="opt"><span>Storico<small id="histSize"></small></span><button class="link" id="wipe">Cancella</button></div>
+    <p class="fine msg" id="wipeMsg"></p>
     <p class="fine">Lo scarto è misurato sul temperamento equabile. Con le corde accordate per quinte pure, le corde vuote segnano qualche cent di differenza (Sol circa −4, Re −2, Mi +2): è normale. I millimetri sono una stima per un violino 4/4 in prima posizione.</p>
   </div>
 </dialog>
@@ -201,12 +259,48 @@ const median = a => { const s = Array.from(a).sort((x, y) => x - y); const h = s
 const stateOf = c => { const a = Math.abs(c); return a <= S.tol ? 'ok' : a <= 2 * S.tol ? 'quasi' : 'fuori'; };
 const signed = c => { const r = Math.round(c); return (r > 0 ? '+' : r < 0 ? '−' : '') + Math.abs(r); };
 const strName = si => STRINGS[si][S.naming];
+const sum = a => a.reduce((x, y) => x + (y || 0), 0);
+const r1 = x => Math.round(x * 10) / 10;
+const cap = s => s ? s[0].toUpperCase() + s.slice(1) : s;
+const fmtInt = x => Math.round(x).toLocaleString('it-IT');
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 function noteHtml(n) {
   const pc = ((n % 12) + 12) % 12, name = NAMES[S.naming][S.acc][pc];
   const base = name.replace(/[♯♭]/, ''), acc = name.length > base.length ? `<span class="acc">${name.slice(-1)}</span>` : '';
   return base + acc + (S.naming === 'en' ? `<span class="oct">${Math.floor(n / 12) - 1}</span>` : '');
 }
 const noteText = n => NAMES[S.naming][S.acc][((n % 12) + 12) % 12];
+
+/* date e durate */
+const pad2 = x => String(x).padStart(2, '0');
+const dayKey = (d = new Date()) => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+const keyDate = k => { const p = k.split('-').map(Number); return new Date(p[0], p[1] - 1, p[2]); };
+const addDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
+const dateShort = k => keyDate(k).toLocaleDateString('it-IT', { weekday: 'short', day: 'numeric', month: 'short' });
+function dateRel(k) {
+  if (k === dayKey()) return 'oggi';
+  if (k === dayKey(addDays(new Date(), -1))) return 'ieri';
+  return dateShort(k);
+}
+const hhmm = sec => new Date(sec * 1000).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
+const listIt = a => a.length < 2 ? a.join('') : a.slice(0, -1).join(', ') + ' e ' + a[a.length - 1];
+function durTxt(sec) {
+  const m = Math.round(sec / 60);
+  if (m < 1) return 'meno di un minuto';
+  if (m < 120) return m === 1 ? '1 minuto' : `${m} minuti`;
+  const h = Math.floor(m / 60), r = m % 60;
+  return `${h} ore` + (r ? ` e ${r} ${r === 1 ? 'minuto' : 'minuti'}` : '');
+}
+function suonatiTxt(sec) {
+  const m = Math.round(sec / 60);
+  if (m < 1) return 'meno di un minuto suonato';
+  if (m === 1) return '1 minuto suonato';
+  if (m < 120) return `${m} minuti suonati`;
+  const h = Math.floor(m / 60), r = m % 60;
+  return r ? `${h} ore e ${r} ${r === 1 ? 'minuto suonato' : 'minuti suonati'}` : `${h} ore suonate`;
+}
+const minTxt = sec => sec < 30 ? 'meno di un minuto' : Math.round(sec / 60) + ' min';
+const minNum = sec => sec <= 0 ? '0' : sec < 30 ? '<1' : String(Math.round(sec / 60));
 
 /* Dove si suona la nota in prima posizione */
 function place(n) {
@@ -217,12 +311,18 @@ function place(n) {
   return { si, off, high: off > 8 };
 }
 function whereText(p) {
-  if (!p) return '';
+  if (!p) return 'Sotto la corda Sol';
   if (p.openOnly) return `Corda ${strName(p.si)} vuota`;
   if (p.openSi != null) return `Corda ${strName(p.openSi)} vuota, oppure 4° dito su ${strName(p.si)}`;
   if (p.high) return `Corda ${strName(p.si)}, oltre la prima posizione`;
   const f = FINGER[p.off];
   return f[0].toUpperCase() + f.slice(1) + ' su ' + strName(p.si);
+}
+function shortWhere(p) {
+  if (p.openOnly) return `corda ${strName(p.si)} vuota`;
+  if (p.openSi != null) return `${strName(p.openSi)} vuota o 4° dito su ${strName(p.si)}`;
+  if (p.high) return `${strName(p.si)}, oltre la prima posizione`;
+  return `${FINGER[p.off]} su ${strName(p.si)}`;
 }
 function mmText(off, c) {
   const mm = SCALE_MM * Math.pow(2, -off / 12) * Math.abs(1 - Math.pow(2, -c / 1200));
@@ -287,16 +387,107 @@ function detect(b, sr, W, gate) {
   return m > 53.4 && m < 100.6 ? m : null;
 }
 
-/* ---------- note tenute e statistiche ---------- */
-let stats = new Map();        // nota → scarti mediani di ogni volta che è stata tenuta
-let seg = null;
+/* ---------- storico ----------
+   Per ogni giorno si tiene solo un riassunto:
+   s: sessioni [inizio, fine (secondi epoch), microfono acceso (s), suonato (s), note tenute]
+   h: quante note tenute per scarto in cent arrotondato per eccesso (0…25, l'ultima casella oltre 25)
+   c, a: somma degli scarti e degli scarti assoluti
+   n: per nota [volte, somma scarti, somma quadrati, somma assoluti], tenuto per 90 giorni */
+const HKEY = 'intonazione-storico', HV = 1;
+const FLUSH_MS = 15000, SESSION_GAP_S = 600, KEEP_NOTES_DAYS = 90;
+let pend = null, sess = null, todayBase = null, lastActiveSec = 0, persistAsked = false, histError = false, pruned = false;
+
+function loadHist() {
+  let raw = null;
+  try { raw = localStorage.getItem(HKEY); } catch (e) {}
+  if (raw) {
+    try { const h = JSON.parse(raw); if (h && h.v === HV && h.days && typeof h.days === 'object') return h; } catch (e) {}
+    try { localStorage.setItem(HKEY + '-illeggibile', raw); } catch (e) {}   // non sovrascrivere senza una copia
+  }
+  return { v: HV, days: {} };
+}
+function saveHist(h) {
+  try { localStorage.setItem(HKEY, JSON.stringify(h)); histError = false; }
+  catch (e) { histError = true; return false; }
+  if (!persistAsked) { persistAsked = true; try { navigator.storage.persist().catch(() => {}); } catch (e) {} }
+  return true;
+}
+const newDay = () => ({ s: [], h: [], c: 0, a: 0, n: {} });
+const dayNotes = d => sum(d.h);
+const dayPlay = d => sum(d.s.map(s => s[3]));
+const hasData = d => !!d && (dayNotes(d) > 0 || dayPlay(d) > 0);
+const okCount = h => sum(h.slice(0, S.tol + 1));
+const pctOf = t => Math.round(100 * t.ok / t.notes);
+function dayTotals(d) {
+  return { sessions: d.s.length, mic: sum(d.s.map(s => s[2])), play: dayPlay(d), notes: dayNotes(d), ok: okCount(d.h), c: d.c, a: d.a };
+}
+function addNote(d, n, c) {
+  const a = Math.abs(c), b = Math.min(26, Math.ceil(a));
+  while (d.h.length <= b) d.h.push(0);
+  d.h[b]++; d.c += c; d.a += a;
+  if (d.n) { const e = d.n[n] || (d.n[n] = [0, 0, 0, 0]); e[0]++; e[1] += c; e[2] += c * c; e[3] += a; }
+}
+function roundDay(d) {
+  d.c = r1(d.c); d.a = r1(d.a);
+  if (d.n) for (const k in d.n) { const e = d.n[k]; e[1] = r1(e[1]); e[2] = Math.round(e[2]); e[3] = r1(e[3]); }
+}
+function prune(h) {
+  const cut = dayKey(addDays(new Date(), -KEEP_NOTES_DAYS));
+  for (const k in h.days) if (k < cut && h.days[k].n) delete h.days[k].n;
+}
+const newPend = () => ({ mic: 0, play: 0, held: [], any: false });
+function openSession() {
+  const nowSec = Math.floor(Date.now() / 1000), k = dayKey(), d = loadHist().days[k];
+  const last = d && d.s.length ? d.s[d.s.length - 1] : null;
+  sess = last && nowSec - last[1] < SESSION_GAP_S ? { day: k, idx: d.s.length - 1 } : { day: k, idx: -1, start: nowSec };
+  lastActiveSec = nowSec;
+}
+// Aggiunge allo storico quello che è successo dall'ultimo salvataggio
+function flush() {
+  if (!pend || !sess) return;
+  const nowSec = Math.floor(Date.now() / 1000), k = dayKey();
+  if (sess.day !== k) sess = { day: k, idx: -1, start: nowSec };
+  const micS = Math.floor(pend.mic / 1000), playS = Math.floor(pend.play / 1000);
+  if (sess.idx < 0 && !playS && !pend.held.length) return;     // non si apre una sessione senza aver suonato
+  const h = loadHist(), d = h.days[k] || (h.days[k] = newDay());
+  if (!d.n) d.n = {};
+  let s = sess.idx >= 0 ? d.s[sess.idx] : null;
+  if (!s) { s = [sess.start || nowSec, nowSec, 0, 0, 0]; d.s.push(s); sess.idx = d.s.length - 1; }
+  s[1] = nowSec; s[2] += micS; s[3] += playS; s[4] += pend.held.length;
+  for (const x of pend.held) addNote(d, x[0], x[1]);
+  roundDay(d);
+  if (!pruned) { prune(h); pruned = true; }
+  if (!saveHist(h)) return;
+  pend.mic -= micS * 1000; pend.play -= playS * 1000; pend.held = [];
+  lastActiveSec = nowSec;
+  todayBase = Object.assign({ day: k, h: d.h.slice() }, dayTotals(d));
+}
+function getTodayBase() {
+  const k = dayKey();
+  if (!todayBase || todayBase.day !== k) {
+    const d = loadHist().days[k];
+    todayBase = d ? Object.assign({ day: k, h: d.h.slice() }, dayTotals(d)) : { day: k, h: [], notes: 0, play: 0 };
+  }
+  return todayBase;
+}
+function refreshToday(saved) {
+  const b = getTodayBase(), node = $('today');
+  let notes = b.notes, ok = okCount(b.h), play = b.play;
+  if (pend) { play += pend.play / 1000; notes += pend.held.length; for (const x of pend.held) if (Math.abs(x[1]) <= S.tol) ok++; }
+  if (histError) { node.textContent = 'Lo storico non si sta salvando: la memoria del browser è piena o bloccata.'; return; }
+  if (!notes && play < 1) { node.textContent = ''; return; }
+  node.textContent = (saved ? 'Sessione salvata. ' : '') + `Oggi ${minTxt(play)}, ${fmtInt(notes)} ${notes === 1 ? 'nota' : 'note'}` + (notes >= 5 ? `, ${Math.round(100 * ok / notes)}% intonate` : '') + '.';
+}
+
+/* ---------- note tenute ---------- */
+let stats = new Map();        // ultima registrazione analizzata: nota → scarto mediano di ogni volta che è stata tenuta
+let fileStats = null, seg = null, todayDirty = false;
 function closeSeg() {
   if (!seg) return;
   if (seg.t1 - seg.t0 >= 250 && seg.v.length >= 6) {
-    const body = seg.v.slice(Math.floor(seg.v.length * 0.2)).map(x => x.c);   // scarta l'attacco
-    if (!stats.has(seg.n)) stats.set(seg.n, []);
-    stats.get(seg.n).push(median(body));
-    countDirty = true;
+    const c = median(seg.v.slice(Math.floor(seg.v.length * 0.2)).map(x => x.c));   // scarta l'attacco
+    if (fileStats) { if (!fileStats.has(seg.n)) fileStats.set(seg.n, []); fileStats.get(seg.n).push(c); }
+    else if (pend) { pend.held.push([seg.n, c]); pend.any = true; todayDirty = true; }
   }
   seg = null;
 }
@@ -445,7 +636,7 @@ function showIdle(text) {
   lastShown = null; drawMap(-1, 0);
 }
 
-let recent = [], countDirty = true;
+let recent = [];
 function process(m, now) {
   if (m != null) {
     if (recent.length && Math.abs(m - median(recent)) > 0.6) recent = [];
@@ -464,29 +655,36 @@ function process(m, now) {
   }
   while (trail.length && now - trail[0].t > TRAIL_MS) trail.shift();
   if (trail.length && !trail[0].br) trail[0].br = true;
-  if (countDirty) { countDirty = false; refreshCount(); }
-}
-function refreshCount() {
-  let k = 0; stats.forEach(v => k += v.length);
-  el.openSum.textContent = k ? `Riepilogo (${k})` : 'Riepilogo';
+  if (todayDirty) { todayDirty = false; refreshToday(); }
 }
 
 /* ---------- microfono ---------- */
 let ctx = null, stream = null, analyser = null, buf = null, W = 1024, running = false, wake = null;
+let lastFrame = 0, lastFlush = 0, lastTick = 0;
 function loop() {
   if (!running) return;
   const now = performance.now();
+  const dt = lastFrame ? Math.min(250, now - lastFrame) : 0;     // in background il ciclo si ferma: le pause non contano
+  lastFrame = now;
   analyser.getFloatTimeDomainData(buf);
-  process(detect(buf, ctx.sampleRate, W, gateRms()), now);
+  const m = detect(buf, ctx.sampleRate, W, gateRms());
+  if (pend) { pend.mic += dt; if (m != null) { pend.play += dt; pend.any = true; } }
+  process(m, now);
   drawLens(now);
+  if (now - lastFlush > FLUSH_MS) { lastFlush = now; flush(); }
+  if (now - lastTick > 5000) { lastTick = now; refreshToday(); }
   requestAnimationFrame(loop);
 }
 async function requestWake() { try { if (navigator.wakeLock) wake = await navigator.wakeLock.request('screen'); } catch (e) {} }
 document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState !== 'visible' || !running) return;
+  if (document.visibilityState === 'hidden') { if (running) { closeSeg(); flush(); } lastFrame = 0; return; }
+  if (!running) return;
+  const nowSec = Math.floor(Date.now() / 1000);
+  if (sess && nowSec - lastActiveSec > SESSION_GAP_S) sess = { day: dayKey(), idx: -1, start: nowSec };   // pausa lunga: nuova sessione
   requestWake();
   if (ctx && ctx.state !== 'running') ctx.resume().catch(() => {});
 });
+window.addEventListener('pagehide', () => { if (running) { closeSeg(); flush(); } });
 function showErr(html) { el.err.innerHTML = html; el.err.classList.toggle('show', !!html); }
 
 async function start() {
@@ -512,13 +710,18 @@ async function start() {
   analyser = ctx.createAnalyser(); analyser.fftSize = 2 * W; analyser.smoothingTimeConstant = 0;
   src.connect(hp); hp.connect(analyser);
   buf = new Float32Array(analyser.fftSize);
+  pend = newPend(); openSession();
+  lastFrame = 0; lastFlush = lastTick = performance.now();
   running = true;
   el.go.textContent = 'Ferma microfono'; el.go.classList.add('on');
   if (!lastShown) showIdle('In ascolto.');
+  refreshToday();
   requestWake(); sizeLens(); loop();
 }
 function stop() {
-  running = false; closeSeg(); refreshCount();
+  running = false; closeSeg();
+  const had = !!(pend && pend.any);
+  flush(); pend = null; sess = null;
   if (stream) stream.getTracks().forEach(t => t.stop());
   if (ctx) ctx.close().catch(() => {});
   stream = ctx = null; liveC = null;
@@ -526,11 +729,26 @@ function stop() {
   el.go.textContent = 'Avvia microfono'; el.go.classList.remove('on');
   if (lastShown) el.now.classList.add('hold'); else showIdle('Avvia il microfono e metti il telefono sul leggio.');
   drawLens(performance.now());
+  refreshToday(had);
 }
 el.go.addEventListener('click', () => running ? stop() : start());
 
-/* ---------- riepilogo ---------- */
-function sayFor(n, mean, spread, count) {
+/* ---------- riepiloghi ---------- */
+function itemsFromSums(nm) {
+  return Object.keys(nm || {}).map(Number).sort((a, b) => a - b).map(n => {
+    const e = nm[n], k = e[0], mean = e[1] / k;
+    const sd = k > 1 ? Math.sqrt(Math.max(0, (e[2] - k * mean * mean) / (k - 1))) : 0;
+    return { n, count: k, mean, sd };
+  });
+}
+function itemsFromArrays(m) {
+  return Array.from(m.keys()).sort((a, b) => a - b).map(n => {
+    const v = m.get(n), k = v.length, mean = sum(v) / k;
+    const sd = k > 1 ? Math.sqrt(sum(v.map(x => (x - mean) * (x - mean))) / (k - 1)) : 0;
+    return { n, count: k, mean, sd };
+  });
+}
+function sayFor(n, mean, sd, count) {
   const p = place(n), inTol = Math.abs(mean) <= S.tol, dir = mean > 0 ? 'Crescente' : 'Calante';
   const side = mean > 0 ? 'verso il ponticello' : 'verso il capotasto';
   let s;
@@ -540,37 +758,294 @@ function sayFor(n, mean, spread, count) {
   else if (p.high) s = `${dir} di ${Math.abs(Math.round(mean))} cent.`;
   else if (p.openSi != null) s = `${dir}. Se è il 4° dito, cade ${mmText(p.off, mean)} troppo ${side}; se è la corda vuota, va accordata.`;
   else s = `${dir}: il dito cade ${mmText(p.off, mean)} troppo ${side}.`;
-  if (count >= 3 && spread > Math.max(25, 2.5 * S.tol)) s += ` Posizione poco stabile: tra una volta e l’altra cambia di ${Math.round(spread)} cent.`;
+  if (count >= 3 && sd > Math.max(10, S.tol) && !(p && p.openOnly)) s += ` Posizione poco stabile: da una volta all’altra varia di circa ±${Math.round(sd)} cent.`;
   return s;
 }
-function renderSummary() {
-  const rows = $('sumRows'), lead = $('sumLead');
-  const keys = Array.from(stats.keys()).sort((a, b) => a - b);
-  let total = 0, good = 0;
-  keys.forEach(n => stats.get(n).forEach(c => { total++; if (Math.abs(c) <= S.tol) good++; }));
-  if (!total) {
-    lead.textContent = 'Ancora nessuna nota. Avvia il microfono e suona: qui trovi, nota per nota, di quanto e in che direzione sbaglia il dito.';
-    rows.innerHTML = ''; return;
-  }
-  lead.textContent = `${total} ${total === 1 ? 'nota tenuta' : 'note tenute'}, ${good} entro ±${S.tol} cent.`;
-  rows.innerHTML = keys.map(n => {
-    const v = stats.get(n), mean = v.reduce((a, b) => a + b, 0) / v.length, lo = Math.min(...v), hi = Math.max(...v);
-    const st = stateOf(mean), cl = x => 50 + Math.max(-50, Math.min(50, x));
+function rowsHtml(items) {
+  const cl = x => 50 + Math.max(-50, Math.min(50, x));
+  return '<ul class="rows">' + items.map(it => {
+    const st = stateOf(it.mean), lo = cl(it.mean - it.sd), hi = cl(it.mean + it.sd);
+    const range = it.count > 1 && hi - lo > 0.5 ? `<i class="range" style="left:${lo}%;width:${hi - lo}%"></i>` : '';
     return `<li>
-      <div class="s-note">${noteHtml(n)}</div>
+      <div class="s-note">${noteHtml(it.n)}</div>
       <div>
-        <div class="s-where">${whereText(place(n))}, ${v.length} ${v.length === 1 ? 'volta' : 'volte'}</div>
-        <div class="s-bar c-${st}"><i class="tol" style="left:${50 - S.tol}%;width:${2 * S.tol}%"></i><i class="zero"></i><i class="range" style="left:${cl(lo)}%;width:${cl(hi) - cl(lo)}%"></i><i class="mark" style="left:${cl(mean)}%"></i></div>
+        <div class="s-where">${whereText(place(it.n))}, ${it.count} ${it.count === 1 ? 'volta' : 'volte'}</div>
+        <div class="s-bar c-${st}"><i class="tol" style="left:${50 - S.tol}%;width:${2 * S.tol}%"></i><i class="zero"></i>${range}<i class="mark" style="left:${cl(it.mean)}%"></i></div>
       </div>
-      <div class="s-num c-${st}">${signed(mean)}</div>
-      <div class="s-say">${sayFor(n, mean, hi - lo, v.length)}</div>
+      <div class="s-num c-${st}">${signed(it.mean)}</div>
+      <div class="s-say">${sayFor(it.n, it.mean, it.sd, it.count)}</div>
     </li>`;
-  }).join('');
+  }).join('') + '</ul>';
+}
+const FLABEL = { 1: '1°', 2: '2°', 3: '3°', 4: '4° o corda vuota' };
+function fingerStats(items) {
+  const g = { 1: [0, 0], 2: [0, 0], 3: [0, 0], 4: [0, 0] };
+  for (const it of items) {
+    const p = place(it.n);
+    if (!p || p.high) continue;
+    const f = p.openSi != null ? 4 : p.off <= 2 ? 1 : p.off <= 4 ? 2 : p.off <= 6 ? 3 : 4;
+    g[f][0] += it.count; g[f][1] += it.mean * it.count;
+  }
+  return [1, 2, 3, 4].filter(f => g[f][0] >= 3).map(f => ({ f, count: g[f][0], mean: g[f][1] / g[f][0] }));
+}
+const fixes = items => items.filter(it => it.count >= 2 && place(it.n) && Math.abs(it.mean) > S.tol)
+  .sort((a, b) => Math.abs(b.mean) - Math.abs(a.mean)).slice(0, 3);
+function insightsHtml(items, enough) {
+  let out = '';
+  const fs = fingerStats(items);
+  if (fs.length >= 2) out += `<p class="detail">Per dito, in media: ${fs.map(x => `${FLABEL[x.f]} <b class="c-${stateOf(x.mean)}">${signed(x.mean)}</b>`).join(', ')}.</p>`;
+  const fx = fixes(items);
+  if (fx.length) out += `<p class="detail">Da curare: ${fx.map(it => `${noteText(it.n)} (${shortWhere(place(it.n))}) <b class="c-${stateOf(it.mean)}">${signed(it.mean)}</b>`).join(', ')}.</p>`;
+  else if (enough && items.length) out += '<p class="detail">Nessuna nota fuori in modo sistematico.</p>';
+  return out;
+}
+function prevDayKey(h, k) { return Object.keys(h.days).filter(x => x < k && dayNotes(h.days[x]) >= 20).sort().pop(); }
+function summaryHtml(h, k, d, withHeadline) {
+  const t = dayTotals(d), items = d.n ? itemsFromSums(d.n) : [];
+  let out = '';
+  if (withHeadline) out += `<p class="headline">${fmtInt(t.notes)} ${t.notes === 1 ? 'nota' : 'note'}${t.notes >= 5 ? `, ${pctOf(t)}% intonate` : ''}</p>`;
+  if (t.sessions) {
+    const n = t.sessions, when = n === 1 ? `in una sessione, alle ${hhmm(d.s[0][0])}`
+      : n <= 4 ? `in ${n} sessioni, alle ${listIt(d.s.map(s => hhmm(s[0])))}`
+      : `in ${n} sessioni, dalle ${hhmm(d.s[0][0])} alle ${hhmm(d.s[n - 1][1])}`;
+    out += `<p class="detail">Hai suonato ${durTxt(t.play)} ${when}, con il microfono acceso per ${durTxt(t.mic)}.</p>`;
+  }
+  if (t.notes >= 5) {
+    const mad = t.a / t.notes, bias = t.c / t.notes;
+    let s = `Scarto medio ${Math.round(mad)} cent`;
+    s += t.notes >= 20 && bias >= 3 ? `; tendi a crescere (${signed(bias)} in media).`
+      : t.notes >= 20 && bias <= -3 ? `; tendi a calare (${signed(bias)} in media).`
+      : t.notes >= 20 ? ', senza una tendenza a crescere o a calare.' : '.';
+    const pk = t.notes >= 20 ? prevDayKey(h, k) : null;
+    if (pk) s += ` ${cap(dateRel(pk))}: ${pctOf(dayTotals(h.days[pk]))}% intonate.`;
+    out += `<p class="detail">${s}</p>`;
+  }
+  return out + insightsHtml(items, t.notes >= 20);
 }
 
+let view = 'today', fileInfo = null;
+function renderToday() {
+  const h = loadHist(), k = dayKey(), d = h.days[k], body = $('todayBody');
+  if (!hasData(d)) {
+    let html = '<p class="headline">Oggi ancora niente</p><p class="detail">Avvia il microfono e suona: il riepilogo del giorno si compone da solo, sessione dopo sessione.</p>';
+    const pk = Object.keys(h.days).filter(x => x < k && hasData(h.days[x])).sort().pop();
+    if (pk) {
+      const pt = dayTotals(h.days[pk]);
+      html += `<p class="detail">${cap(dateRel(pk))} hai suonato ${durTxt(pt.play)}: ${fmtInt(pt.notes)} note${pt.notes >= 5 ? `, ${pctOf(pt)}% intonate` : ''}. <button class="link" data-view="days">Apri lo storico</button></p>`;
+    }
+    body.innerHTML = html;
+    return;
+  }
+  const items = itemsFromSums(d.n);
+  body.innerHTML = summaryHtml(h, k, d, true) + (items.length ? rowsHtml(items) : '');
+}
+
+function period(h, offset, len) {
+  const r = { play: 0, notes: 0, ok: 0, days: 0, a: 0, c: 0, sessions: 0 };
+  for (let i = offset; i < offset + len; i++) {
+    const d = h.days[dayKey(addDays(new Date(), -i))];
+    if (!hasData(d)) continue;
+    const t = dayTotals(d);
+    r.play += t.play; r.notes += t.notes; r.ok += t.ok; r.a += t.a; r.c += t.c; r.sessions += t.sessions; r.days++;
+  }
+  return r;
+}
+function streakOf(h) {
+  let i = hasData(h.days[dayKey()]) ? 0 : 1, n = 0;
+  while (hasData(h.days[dayKey(addDays(new Date(), -i))])) { n++; i++; }
+  return n;
+}
+function histBytes() { try { return (localStorage.getItem(HKEY) || '').length; } catch (e) { return 0; } }
+const kbTxt = n => n < 1024 ? 'meno di 1 KB' : Math.round(n / 1024) + ' KB';
+
+let chartDays = [], chartSel = 13;
+function renderDays() {
+  const h = loadHist(), body = $('daysBody');
+  const keys = Object.keys(h.days).filter(k => hasData(h.days[k])).sort().reverse();
+  $('daysFine').textContent = `Lo storico resta su questo telefono e occupa ${kbTxt(histBytes())}: di ogni giorno si tiene un riassunto, e il dettaglio nota per nota per 90 giorni. Se cancelli i dati del browser va perso, quindi ogni tanto salva un backup: si ripristina da qui.`;
+  if (!keys.length) {
+    body.innerHTML = '<p class="headline">Lo storico è vuoto</p><p class="detail">Ogni volta che usi il microfono la sessione viene salvata qui, con il riepilogo del giorno.</p>';
+    chartDays = [];
+    return;
+  }
+  const w = period(h, 0, 7), pw = period(h, 7, 7), streak = streakOf(h);
+  let html = w.days
+    ? `<p class="headline">Ultimi 7 giorni: ${suonatiTxt(w.play)}, ${fmtInt(w.notes)} note${w.notes >= 5 ? `, ${pctOf(w)}% intonate` : ''}</p>`
+    : '<p class="headline">Negli ultimi 7 giorni non hai suonato</p>';
+  const det = [];
+  if (w.days) det.push(`Hai suonato in ${w.days} ${w.days === 1 ? 'giorno' : 'giorni'} su 7${w.notes >= 5 ? `, con uno scarto medio di ${Math.round(w.a / w.notes)} cent` : ''}.`);
+  if (streak >= 2) det.push(`Sei a ${streak} giorni di fila.`);
+  if (pw.days) det.push(`Nei 7 giorni prima: ${suonatiTxt(pw.play)}${pw.notes >= 5 ? `, ${pctOf(pw)}% intonate` : ''}.`);
+  if (det.length) html += `<p class="detail">${det.join(' ')}</p>`;
+  html += '<p class="readout" id="readout" aria-live="polite"></p><div class="charts" id="charts" tabindex="0" role="group" aria-label="Ultimi 14 giorni. Tocca un giorno o usa le frecce per vederne i numeri."></div>';
+  html += '<div class="dayhead" aria-hidden="true"><span></span><span>min</span><span>note</span><span>intonate</span><span></span></div>';
+  html += keys.map(k => {
+    const t = dayTotals(h.days[k]);
+    return `<details class="day" data-k="${k}"><summary><span class="d-date">${cap(dateRel(k))}</span><span>${minNum(t.play)}</span><span>${fmtInt(t.notes)}</span><span>${t.notes >= 5 ? pctOf(t) + '%' : '–'}</span><span class="chev" aria-hidden="true"></span></summary><div class="d-body"></div></details>`;
+  }).join('');
+  body.innerHTML = html;
+  body.querySelectorAll('details.day').forEach(dt => dt.addEventListener('toggle', () => {
+    if (!dt.open || dt.dataset.done) return;
+    dt.dataset.done = '1';
+    const k = dt.dataset.k;
+    dt.querySelector('.d-body').innerHTML = summaryHtml(h, k, h.days[k], false);
+  }));
+  chartDays = [];
+  for (let i = 13; i >= 0; i--) { const k = dayKey(addDays(new Date(), -i)), d = h.days[k]; chartDays.push({ k, t: hasData(d) ? dayTotals(d) : null }); }
+  chartSel = chartDays.map(x => !!x.t).lastIndexOf(true);
+  if (chartSel < 0) chartSel = chartDays.length - 1;
+  const box = $('charts');
+  const pick = e => {
+    const r = box.getBoundingClientRect(), slot = (box.clientWidth - 36) / chartDays.length;
+    const i = Math.max(0, Math.min(chartDays.length - 1, Math.floor((e.clientX - r.left) / slot)));
+    if (i !== chartSel) { chartSel = i; drawCharts(); }
+  };
+  box.addEventListener('pointerdown', pick);
+  box.addEventListener('pointermove', e => { if (e.pointerType === 'mouse' || e.buttons) pick(e); });
+  box.addEventListener('keydown', e => {
+    if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+    e.preventDefault();
+    chartSel = Math.max(0, Math.min(chartDays.length - 1, chartSel + (e.key === 'ArrowLeft' ? -1 : 1)));
+    drawCharts();
+  });
+  drawCharts();
+}
+function niceMax(v) {
+  for (const s of [5, 10, 15, 20, 30, 45, 60, 90, 120, 180, 240, 300, 480, 600]) if (v <= s) return s;
+  return Math.ceil(v / 60) * 60;
+}
+function drawCharts() {
+  const box = $('charts');
+  if (!box || !chartDays.length) return;
+  const W = Math.max(240, Math.floor(box.clientWidth)), gut = 36, PW = W - gut, n = chartDays.length;
+  const slot = PW / n, bw = Math.min(14, Math.max(6, Math.floor(slot - 8))), PH = 56, top = 6, base = top + PH, H = base + 2;
+  const xc = i => slot * i + slot / 2;
+  const mins = chartDays.map(x => x.t ? x.t.play / 60 : 0), maxM = niceMax(Math.max(1, ...mins));
+  const pcts = chartDays.map(x => x.t && x.t.notes >= 5 ? 100 * x.t.ok / x.t.notes : null);
+  const col = (i, v, vmax) => {
+    if (!(v > 0)) return '';
+    const hgt = Math.max(2, v / vmax * PH), x = xc(i) - bw / 2, y = base - hgt, r = Math.min(4, hgt / 2, bw / 2);
+    return `<path d="M${x} ${base}V${y + r}A${r} ${r} 0 0 1 ${x + r} ${y}H${x + bw - r}A${r} ${r} 0 0 1 ${x + bw} ${y + r}V${base}Z" fill="#f4ecdd" fill-opacity="${i === chartSel ? 1 : .4}"/>`;
+  };
+  const grid = (y, label) => `<line x1="0" x2="${PW}" y1="${y + .5}" y2="${y + .5}" stroke="#5a382c"/>` + (label != null ? `<text x="${W}" y="${y + 4}" text-anchor="end" class="ax">${label}</text>` : '');
+  const selBg = `<rect x="${slot * chartSel + 1}" y="0" width="${slot - 2}" height="${H}" rx="4" fill="#f4ecdd" fill-opacity=".06"/>`;
+  const svg = inner => `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">${selBg}${inner}</svg>`;
+  const c1 = svg(grid(top, maxM) + grid(base, '0') + mins.map((v, i) => col(i, v, maxM)).join(''));
+  const c2 = svg(grid(top, '100%') + grid(top + PH / 2, '50%') + grid(base, '0') + pcts.map((v, i) => col(i, v, 100)).join(''));
+  const xl = `<svg width="${W}" height="18" viewBox="0 0 ${W} 18">${chartDays.map((x, i) => `<text x="${xc(i)}" y="14" text-anchor="middle" class="${i === chartSel ? 'axs' : 'ax'}">${keyDate(x.k).getDate()}</text>`).join('')}</svg>`;
+  box.innerHTML = `<div class="chart-t">Minuti suonati al giorno</div>${c1}<div class="chart-t">Note intonate</div>${c2}${xl}`;
+  const x = chartDays[chartSel], t = x.t;
+  $('readout').innerHTML = `${cap(dateRel(x.k))}: ` + (t
+    ? `<b>${durTxt(t.play)}</b>, <b>${fmtInt(t.notes)}</b> ${t.notes === 1 ? 'nota' : 'note'}` + (t.notes >= 5 ? `, <b>${pctOf(t)}%</b> intonate` : '')
+    : 'nessuna sessione');
+}
+
+function renderFile() {
+  if (!fileInfo) return;
+  const items = itemsFromArrays(stats), total = sum(items.map(i => i.count));
+  let good = 0;
+  stats.forEach(v => v.forEach(c => { if (Math.abs(c) <= S.tol) good++; }));
+  $('fileBody').innerHTML = `<p class="headline">${fmtInt(total)} ${total === 1 ? 'nota' : 'note'}${total >= 5 ? `, ${Math.round(100 * good / total)}% intonate` : ''}</p>`
+    + `<p class="detail">Registrazione «${esc(fileInfo.name)}», ${fileInfo.secs} secondi.</p>`
+    + insightsHtml(items, total >= 20) + rowsHtml(items);
+}
+
+function setView(v) {
+  if (v === 'file' && !fileInfo) v = 'today';
+  view = v;
+  document.querySelectorAll('#views button').forEach(b => {
+    b.setAttribute('aria-pressed', String(b.dataset.view === v));
+    if (b.dataset.view === 'file') b.hidden = !fileInfo;
+  });
+  $('vToday').hidden = v !== 'today'; $('vDays').hidden = v !== 'days'; $('vFile').hidden = v !== 'file';
+  if (v === 'today') renderToday(); else if (v === 'days') renderDays(); else renderFile();
+}
+$('sum').addEventListener('click', e => { const b = e.target.closest('[data-view]'); if (b) setView(b.dataset.view); });
+
+/* ---------- testo da incollare, backup, ripristino ---------- */
+function dayLine(k, d) {
+  const t = dayTotals(d), items = d.n ? itemsFromSums(d.n) : [];
+  let s = `${dateShort(k)}: ${minNum(t.play)} min suonati in ${t.sessions} ${t.sessions === 1 ? 'sessione' : 'sessioni'}, ${t.notes} note`;
+  if (t.notes >= 5) s += `, ${pctOf(t)}% intonate, scarto medio ${Math.round(t.a / t.notes)} cent (tendenza ${signed(t.c / t.notes)})`;
+  s += '.';
+  const fs = fingerStats(items);
+  if (fs.length >= 2) s += ` Dita: ${fs.map(x => `${x.f < 4 ? x.f + '°' : '4°/vuota'} ${signed(x.mean)}`).join(', ')}.`;
+  const fx = fixes(items);
+  if (fx.length) s += ` Da curare: ${fx.map(it => `${noteText(it.n)} (${shortWhere(place(it.n))}) ${signed(it.mean)}`).join(', ')}.`;
+  return s;
+}
+function shareText() {
+  if (running) flush();
+  const h = loadHist(), keys = Object.keys(h.days).filter(k => hasData(h.days[k])).sort().reverse();
+  const L = [`Intonazione violino, storico al ${new Date().toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' })}. Tolleranza ±${S.tol} cent, La a ${S.a4} Hz; contano le note tenute almeno un quarto di secondo.`];
+  const w = period(h, 0, 7), pw = period(h, 7, 7);
+  if (w.days) L.push(`Ultimi 7 giorni: ${suonatiTxt(w.play)} in ${w.days} ${w.days === 1 ? 'giorno' : 'giorni'}, ${w.notes} note` + (w.notes >= 5 ? `, ${pctOf(w)}% intonate, scarto medio ${Math.round(w.a / w.notes)} cent.` : '.'));
+  if (pw.days) L.push(`7 giorni prima: ${suonatiTxt(pw.play)} in ${pw.days} ${pw.days === 1 ? 'giorno' : 'giorni'}, ${pw.notes} note` + (pw.notes >= 5 ? `, ${pctOf(pw)}% intonate.` : '.'));
+  L.push('');
+  for (const k of keys.slice(0, 31)) L.push(dayLine(k, h.days[k]));
+  if (!keys.length) L.push('Nessuna sessione salvata.');
+  return L.join('\n');
+}
+$('copyText').addEventListener('click', async () => {
+  const text = shareText(), msg = $('daysMsg');
+  try { await navigator.clipboard.writeText(text); msg.textContent = 'Riepilogo copiato negli appunti.'; }
+  catch (e) {
+    msg.textContent = 'Copia non permessa qui: seleziona il testo e copialo a mano.';
+    const ta = document.createElement('textarea');
+    ta.className = 'copybox'; ta.rows = 8; ta.readOnly = true; ta.value = text;
+    msg.appendChild(ta); ta.focus(); ta.select();
+  }
+});
+$('backup').addEventListener('click', async () => {
+  if (running) flush();
+  const msg = $('daysMsg'), name = `intonazione-storico-${dayKey()}.json`;
+  const json = JSON.stringify({ app: 'intonazione-violino', v: HV, esportato: new Date().toISOString(), days: loadHist().days });
+  let file = null;
+  try { file = new File([json], name, { type: 'application/json' }); } catch (e) {}
+  try {
+    if (file && navigator.canShare && navigator.canShare({ files: [file] })) {
+      await navigator.share({ files: [file], title: 'Backup storico intonazione' });
+      msg.textContent = 'Backup condiviso.';
+      return;
+    }
+  } catch (e) { if (e && e.name === 'AbortError') return; }
+  try {
+    const url = URL.createObjectURL(file || new Blob([json], { type: 'application/json' })), a = document.createElement('a');
+    a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+    msg.textContent = `Backup scaricato: ${name}.`;
+  } catch (e) { msg.textContent = 'Questo browser non permette di salvare il backup.'; }
+});
+const nums = a => Array.isArray(a) && a.every(x => typeof x === 'number' && isFinite(x));
+function validDay(d) {
+  return !!d && Array.isArray(d.s) && d.s.every(x => nums(x) && x.length >= 5) && nums(d.h) && d.h.length <= 27
+    && typeof d.c === 'number' && typeof d.a === 'number'
+    && (d.n == null || (typeof d.n === 'object' && Object.keys(d.n).every(k => /^\d+$/.test(k) && nums(d.n[k]) && d.n[k].length === 4)));
+}
+$('restore').addEventListener('change', async e => {
+  const f = e.target.files[0];
+  e.target.value = '';
+  if (!f) return;
+  const msg = $('daysMsg');
+  let data = null;
+  try { data = JSON.parse(await f.text()); } catch (err) {}
+  if (!data || data.v !== HV || !data.days || typeof data.days !== 'object') { msg.textContent = 'Questo file non è un backup dello storico.'; return; }
+  if (running) flush();
+  const h = loadHist();
+  let n = 0;
+  for (const k of Object.keys(data.days)) {
+    const d = data.days[k];
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(k) || !validDay(d)) continue;
+    if (!h.days[k] || dayNotes(d) > dayNotes(h.days[k])) { h.days[k] = d; n++; }
+  }
+  if (n && !saveHist(h)) { msg.textContent = 'Non riesco a salvare: la memoria del browser è piena.'; return; }
+  if (sess) { sess.idx = -1; sess.start = Math.floor(Date.now() / 1000); }
+  todayBase = null; refreshToday(); renderDays();
+  msg.textContent = n ? `Ripristinati ${n} ${n === 1 ? 'giorno' : 'giorni'}.` : 'Niente da ripristinare: lo storico ha già questi giorni.';
+});
+
 /* ---------- analisi di una registrazione ---------- */
-async function analyseFile(file) {
-  const msg = $('fileMsg');
+async function analyseFile(file, msg) {
   const AC = window.AudioContext || window.webkitAudioContext;
   let audio;
   try {
@@ -591,7 +1066,7 @@ async function analyseFile(file) {
   levels.sort((a, b) => a - b);
   const gate = Math.max(0.0008, 0.1 * (levels[Math.floor(levels.length * 0.95)] || 0));
   if (running) stop();
-  stats = new Map(); seg = null;
+  fileStats = new Map(); seg = null;
   const rec = [];
   let frames = 0;
   for (let i = 0; i + N <= len; i += hop, frames++) {
@@ -603,15 +1078,20 @@ async function analyseFile(file) {
     } else { rec.length = 0; feed(null, t); }
     if (frames % 300 === 299) { msg.textContent = `Analizzo… ${Math.round(100 * i / len)}%`; await new Promise(r => setTimeout(r)); }
   }
-  closeSeg(); refreshCount(); renderSummary();
-  msg.textContent = stats.size ? `Riepilogo calcolato su «${file.name}» (${Math.round(len / sr)} secondi).`
-    : 'Nella registrazione non ho trovato note tenute abbastanza a lungo. Prova con note più lunghe o avvicina il telefono.';
+  closeSeg();
+  const res = fileStats;
+  fileStats = null;
+  if (!res.size) { msg.textContent = 'Nella registrazione non ho trovato note tenute abbastanza a lungo. Prova con note più lunghe o avvicina il telefono.'; return; }
+  stats = res;
+  fileInfo = { name: file.name, secs: Math.round(len / sr) };
+  msg.textContent = '';
+  setView('file');
 }
-$('file').addEventListener('change', e => { const f = e.target.files[0]; e.target.value = ''; if (f) analyseFile(f); });
-$('reset').addEventListener('click', () => {
-  stats = new Map(); seg = null; refreshCount(); renderSummary();
-  $('fileMsg').textContent = 'Riepilogo azzerato.';
-});
+document.querySelectorAll('.audioFile').forEach(inp => inp.addEventListener('change', e => {
+  const f = e.target.files[0];
+  e.target.value = '';
+  if (f) analyseFile(f, e.target.closest('section').querySelector('.msg'));
+}));
 
 /* ---------- fogli e impostazioni ---------- */
 function openSheet(d) { if (d.showModal) d.showModal(); else d.setAttribute('open', ''); }
@@ -619,13 +1099,39 @@ document.querySelectorAll('dialog').forEach(d => {
   d.addEventListener('click', e => { if (e.target === d) d.close(); });
   d.querySelector('[data-close]').addEventListener('click', () => d.close ? d.close() : d.removeAttribute('open'));
 });
-el.openSum.addEventListener('click', () => { closeSegIfIdle(); renderSummary(); openSheet($('sum')); });
-$('openSet').addEventListener('click', () => openSheet($('set')));
-function closeSegIfIdle() { if (seg && performance.now() - seg.t1 > 150) { closeSeg(); refreshCount(); } }
+function closeSegIfIdle() { if (seg && performance.now() - seg.t1 > 150) closeSeg(); }
+el.openSum.addEventListener('click', () => {
+  closeSegIfIdle();
+  if (running) flush();
+  $('daysMsg').textContent = '';
+  openSheet($('sum'));
+  setView(view);
+});
+$('openSet').addEventListener('click', () => {
+  $('histSize').textContent = kbTxt(histBytes());
+  $('wipeMsg').textContent = '';
+  openSheet($('set'));
+});
+let wipeTimer = 0;
+$('wipe').addEventListener('click', () => {
+  const b = $('wipe');
+  const reset = () => { b.classList.remove('danger'); b.textContent = 'Cancella'; };
+  if (!b.classList.contains('danger')) {
+    b.classList.add('danger'); b.textContent = 'Tocca di nuovo per cancellare tutto';
+    wipeTimer = setTimeout(reset, 4000);
+    return;
+  }
+  clearTimeout(wipeTimer); reset();
+  try { localStorage.removeItem(HKEY); } catch (e) {}
+  if (sess) { sess.idx = -1; sess.start = Math.floor(Date.now() / 1000); }
+  todayBase = null; refreshToday();
+  $('histSize').textContent = kbTxt(histBytes());
+  $('wipeMsg').textContent = 'Storico cancellato.';
+});
 
 function refreshSettings() {
   $('aVal').textContent = S.a4 + ' Hz';
-  document.querySelectorAll('.seg').forEach(sg => sg.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === S[sg.dataset.key]))));
+  document.querySelectorAll('.seg[data-key]').forEach(sg => sg.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === S[sg.dataset.key]))));
   $('tol').value = S.tol; $('tolVal').textContent = '±' + S.tol + ' cent';
   $('gate').value = S.gate; $('gateVal').textContent = S.gate + '%';
 }
@@ -634,22 +1140,26 @@ function settingsChanged() {
   for (const k in shown) delete shown[k];
   if (lastShown) { const c = lastShown.c, n = lastShown.n, hold = el.now.classList.contains('hold'); lastShown = null; showNote({ n, c, stable: c }); if (hold) el.now.classList.add('hold'); }
   if (!running) drawLens(performance.now());
+  refreshToday();
 }
 $('aMinus').addEventListener('click', () => { S.a4 = Math.max(415, S.a4 - 1); settingsChanged(); });
 $('aPlus').addEventListener('click', () => { S.a4 = Math.min(466, S.a4 + 1); settingsChanged(); });
-document.querySelectorAll('.seg button').forEach(b => b.addEventListener('click', () => { S[b.parentNode.dataset.key] = b.dataset.v; settingsChanged(); }));
+document.querySelectorAll('.seg[data-key] button').forEach(b => b.addEventListener('click', () => { S[b.parentNode.dataset.key] = b.dataset.v; settingsChanged(); }));
 $('tol').addEventListener('input', e => { S.tol = +e.target.value; settingsChanged(); });
 $('gate').addEventListener('input', e => { S.gate = +e.target.value; save(); refreshSettings(); });
 
 /* ---------- avvio ---------- */
-function layout() { buildMap(); sizeLens(); drawLens(performance.now()); }
+function layout() {
+  buildMap(); sizeLens(); drawLens(performance.now());
+  if ($('sum').open && view === 'days') drawCharts();
+}
 window.addEventListener('resize', layout);
-refreshSettings(); layout();
+refreshSettings(); layout(); refreshToday();
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(layout);
 if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) navigator.serviceWorker.register('sw.js').catch(() => {});
 
 // appiglio per i test automatici
-window.__intonazione = { yin, place, adviceText, stats: () => stats, S };
+window.__intonazione = { yin, place, adviceText, S, hist: loadHist, flush: () => flush(), dayKey, shareText, stats: () => stats };
 })();
 </script>
 </body>
