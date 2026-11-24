@@ -1,5 +1,5 @@
 // Intonazione violino: copia locale per l'uso senza rete
-const CACHE = 'intonazione-v2';
+const CACHE = 'intonazione-v3';   // stesso numero di APP_VERSION in index.html
 const SHELL = ['./', 'index.html', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png'];
 
 self.addEventListener('install', e => {
