@@ -193,6 +193,7 @@ input[type=range]{width:136px;accent-color:var(--avorio)}
       <div id="daysBody"></div>
       <div class="sheet-actions">
         <button class="link" id="copyText">Copia il riepilogo</button>
+        <button class="link" id="copyTrain">Copia per app allenamenti</button>
         <button class="link" id="backup">Salva un backup</button>
         <label class="link file">Ripristina un backup<input type="file" id="restore" accept="application/json,.json"></label>
       </div>
@@ -233,7 +234,7 @@ input[type=range]{width:136px;accent-color:var(--avorio)}
 'use strict';
 
 // Va aumentata a ogni aggiornamento, insieme a CACHE in sw.js
-const APP_VERSION = 3;
+const APP_VERSION = 4;
 
 /* ---------- dati musicali ---------- */
 const NAMES = {
@@ -990,15 +991,27 @@ function shareText() {
   if (!keys.length) L.push('Nessuna sessione salvata.');
   return L.join('\n');
 }
-$('copyText').addEventListener('click', async () => {
-  const text = shareText(), msg = $('daysMsg');
-  try { await navigator.clipboard.writeText(text); msg.textContent = 'Riepilogo copiato negli appunti.'; }
+async function copyOut(text, done) {
+  const msg = $('daysMsg');
+  try { await navigator.clipboard.writeText(text); msg.textContent = done; }
   catch (e) {
     msg.textContent = 'Copia non permessa qui: seleziona il testo e copialo a mano.';
     const ta = document.createElement('textarea');
     ta.className = 'copybox'; ta.rows = 8; ta.readOnly = true; ta.value = text;
     msg.appendChild(ta); ta.focus(); ta.select();
   }
+}
+$('copyText').addEventListener('click', () => copyOut(shareText(), 'Riepilogo copiato negli appunti.'));
+// Per l'app allenamenti: lo stesso JSON del backup, solo gli ultimi 60 giorni (oggi compreso)
+function trainJson() {
+  if (running) flush();
+  const all = loadHist().days, cut = dayKey(addDays(new Date(), -59)), days = {};
+  for (const k of Object.keys(all).sort()) if (k >= cut && hasData(all[k])) days[k] = all[k];
+  return { text: JSON.stringify({ app: 'intonazione-violino', v: HV, versione: APP_VERSION, esportato: new Date().toISOString(), days }), count: Object.keys(days).length };
+}
+$('copyTrain').addEventListener('click', () => {
+  const t = trainJson();
+  copyOut(t.text, `Copiato per l’app allenamenti: ${t.count} ${t.count === 1 ? 'giorno' : 'giorni'}.`);
 });
 $('backup').addEventListener('click', async () => {
   if (running) flush();
