@@ -15,3 +15,4 @@ schermata Home del telefono; una volta aperta funziona anche senza rete.
 L'audio viene analizzato sul dispositivo e non viene inviato da nessuna parte; anche lo
 storico resta nel browser del telefono.
 I caratteri incorporati (Bodoni Moda, Instrument Sans) sono distribuiti con licenza SIL OFL 1.1.
+
